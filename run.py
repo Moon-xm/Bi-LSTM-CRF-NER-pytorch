@@ -1,7 +1,7 @@
 # coding: UTF-8
 from dataprocess import build_dataset
-from train_eval import train_test
-from models.BiLSTM_CRF import config, Model  # 所有参数存在这
+from train_eval_faster import train_test
+from models.BiLSTM_CRF_faster import config, Model  # 所有参数存在这
 
 if __name__ == '__main__':
     print('Loading data...')

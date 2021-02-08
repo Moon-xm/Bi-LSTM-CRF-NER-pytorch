@@ -11,7 +11,7 @@ class config(object):
         self.train_path = 'data/train'  # *
         self.dev_path = 'data/test'  # *
         self.class_ls_path = 'data/class.txt'  # *
-        self.pretrain_dir = 'data/sgns.sogou.char'  # 前期下载的预训练词向量*
+        self.pretrain_dir = '/data/sgns.sogou.char'  # 前期下载的预训练词向量*
         self.test_path = 'data/test.txt'  # 若该文件不存在会加载dev.txt进行最终测试
         self.vocab_path = 'data/vocab.pkl'
         self.model_save_dir = 'checkpoint'
@@ -66,7 +66,7 @@ class Model(nn.Module):
         # 将lstm的输出映射到标记空间
         self.hidden2tag = nn.Linear(config.hidden_size*self.num_directions, self.tagset_size)  # -> (B, num_class+2)  加上了START END
         self.transitions = nn.Parameter(
-            torch.randn(self.tagset_size, self.tagset_size)
+            self._make_tensor(torch.randn(self.tagset_size, self.tagset_size))
         )
         # 这两个语句强制执行我们从不转移到开始标记的约束
         # 而且永远不会从停止标记转移
@@ -75,7 +75,7 @@ class Model(nn.Module):
 
     def _forward_alg(self, feats):
         # 使用前向算法计算分区函数
-        init_alphas = torch.full((1, self.tagset_size), -10000.)
+        init_alphas = self._make_tensor(torch.full((1, self.tagset_size), -10000.))
         # START_TAG 包含所有得分
         init_alphas[0][self.tag2idx[START_TAG]] = 0.
 
@@ -101,8 +101,8 @@ class Model(nn.Module):
 
     def _score_sentence(self, feats, tags):
         # Give the score of a provided tag sequence
-        score = torch.zeros(1)
-        tags = torch.cat([torch.tensor([self.tag2idx[START_TAG]], dtype=torch.long),tags])
+        score = self._make_tensor(torch.zeros(1))
+        tags = self._make_tensor(torch.cat([self._make_tensor(torch.tensor([self.tag2idx[START_TAG]], dtype=torch.long)),tags]))
         for i, feat in enumerate(feats):
             score = score + self.transitions[tags[i+1], tags[i]]+feat[tags[i+1]]
         score = score + self.transitions[self.tag2idx[STOP_TAG], tags[-1]]
@@ -112,7 +112,7 @@ class Model(nn.Module):
         backpointers = []
 
         # Initialize the viterbi variables in log space
-        init_vvars = torch.full((1, self.tagset_size), -10000.)
+        init_vvars = self._make_tensor(torch.full((1, self.tagset_size), -10000.))
         init_vvars[0][self.tag2idx[START_TAG]] = 0
 
         # forward_var at step o holds the viterbi variables for step i-1
